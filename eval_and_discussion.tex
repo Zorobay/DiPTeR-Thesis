@@ -1,0 +1,12 @@
+\begin{enumerate}
+    \item Discuss that one pitfall is getting into local minima, and what could/can be done to avoid it.
+    \item How finding correct paramter values within its defined boundaries could have been done. 
+    \item Discuss how one might want to switch over to a rendering method that works more similar to OpenGL, or even better, utilize PyTorch3D (also check how they render!)
+\end{enumerate}
+
+\section{Finding the correct minimum}
+\begin{enumerate}
+    \item Sometimes its difficult to find the correct minima. We're seeking the global minima, but its easy to get stuck in a local minima...
+    \item Difficult with colors, as we have logical restrictions on parameter values, but minima might exist for other values...
+    \item Some values are cyclical, like hue in HSV shader. A value of h=1.5 gives the same color as h=0.5...
+\end{enumerate}

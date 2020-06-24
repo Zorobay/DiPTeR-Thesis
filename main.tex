@@ -1,0 +1,184 @@
+\documentclass[nofilelist]{template/cslthse-msc}
+% to show a list of used packages at the end of the document, delete the nofilelist option
+%\documentclass{cslthse-msc} 
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsthm}
+%\usepackage{makeidx}
+\usepackage{graphicx}
+\usepackage[font=small]{caption}
+\usepackage[titletoc, header, page]{appendix}
+\usepackage{transparent}
+\usepackage[procnames]{listings}
+\usepackage{enumitem, amssymb}
+\usepackage{framed}
+\usepackage{dsfont}
+\usepackage[boxed]{algorithm2e}     % For defining pseudocode
+\usepackage{subcaption}             % For subfigures
+\usepackage{minted}
+\usepackage{soul}
+
+% ----- Define math operator argmin and vec -----
+\DeclareMathOperator*{\argmin}{argmin}
+%\renewcommand{\vec}[1]{\mathbf{#1}}
+
+
+% ------ Define colors according to material theme -----
+\definecolor{matBackground}{RGB}{40,44,52}
+\definecolor{shadecolor}{named}{matBackground}
+\definecolor{matString}{RGB}{152,195,121}
+\definecolor{matText}{RGB}{166,178,192}
+\definecolor{matComment}{RGB}{89,98,111}
+\definecolor{matKeyword}{RGB}{192,121,221}
+\definecolor{matNumber}{RGB}{209,154,102}
+\definecolor{matFunction}{RGB}{97,174,239}
+
+\definecolor{tfBackground}{HTML}{f7f7f7}
+
+% ----- Setup Minted ---------
+\usemintedstyle{pastie}
+\setminted{
+    baselinestretch=1.2,
+    bgcolor=tfBackground,
+    fontsize=\footnotesize,
+    linenos % enable line numbers
+}
+
+
+% ----- Setup listings ---------
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{matBackground},   
+    commentstyle=\color{matComment},
+    keywordstyle=\color{matKeyword},
+    numberstyle=\tiny\color{matNumber},
+    stringstyle=\color{matString},
+    basicstyle=\linespread{1.1}\ttfamily\footnotesize\color{matText},
+    procnamekeys={def},
+    procnamestyle=\color{matFunction},
+    morekeywords={Tensor},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=1
+}
+
+\lstdefinelanguage{glsl}{
+    keywords = {in, out, uniform}
+}
+\lstset{language=glsl, style=mystyle}
+\lstset{language=python, style=mystyle}
+
+% ------ New command 'code' instead of stupid lstlisting -----
+
+\newcommand{\codeinline}[2][python]{\lstinline[language=#1]{#2}}
+
+
+% ------- Define checkmark for checkbox list -----------
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}%
+\hspace{-2.5pt}}
+
+
+
+
+% used to display the used files at the end. Select nofilelist as a package option to disable this
+\listfiles % initialize
+
+%\geometry{showframe}
+%better like this?
+\student{Sebastian Hegardt}{dat15she@student.lu.se}
+%\students{Flavius Gruian}{Flavius.Gruian@cs.lth.se}{Camilla Lekebjer}{Camilla.Lekebjer@cs.lth.se}
+
+\thesisnumber{LU-CS-EX: 2019-XX} % Birger Swahn will provide this number to you, once the thesis is ready for publication
+% default is Master. Uncomment the following for "kandidatarbete"/Bachelor's thesis
+%\thesistype{Bachelor}{Kandidatarbete}
+
+%\title{Formatting a Master's Thesis}
+\title{DiPTeR$:$ a Differentiable Procedural Texture Renderer}
+
+%\onelinetitle
+\twolinestitle
+%\threelinestitle
+%\fourlinestitle
+
+%\subtitle{A {\LaTeX} class}
+%\company{The Corporation AB LTD Inc}
+\supervisor{Elin Anna Topp, \href{mailto:elin_anna.topp@cs.lth.se}{\texttt{elin\_anna.topp@cs.lth.se}}}
+%\supervisor{John Deer, \href{mailto:jdeer@company.com}{\texttt{jdeer@company.com}}}
+\examiner{Michael Doggett, \href{mailto:michael.doggett@cs.lth.se}{\texttt{michael.doggett@cs.lth.se}}}
+
+\date{\today}
+%\date{January 16, 2015}
+
+\acknowledgements{
+If you want to thank people, do it here, on a separate right-hand page. Both the U.S. \textit{acknowledgments} and the British \textit{acknowledgements} spellings are acceptable.
+
+Thank peeps here bro!
+}
+
+\theabstract{
+This document describes the Master's Thesis format for the theses carried out at 
+the Department of Computer Science, Lund University. 
+
+Your abstract should capture, in English, the whole thesis with focus on the problem and solution in 150 words. It should be placed on a separate right-hand page, with an additional \textit{1cm} margin on both left and right. Avoid acronyms, footnotes, and references in the abstract if possible.
+
+Leave a \textit{2cm} vertical space after the abstract and provide a few keywords relevant for your report. Use five to six words, of which at most two should be from the title.
+}
+
+\keywords{MSc, BSc, template, report, style, structure}
+
+%% Only used to display font sizes
+\makeatletter
+\newcommand\thefontsize[1]{{#1 \f@size pt\par}}
+\makeatother
+%%%%%%%%%%
+
+\begin{document}
+\renewcommand{\bibname}{References}
+
+\makefrontmatter
+\chapter{Introduction}
+\input{introduction}
+
+\chapter{Background \& Related Work}
+\input{background}
+
+\chapter{Method}
+\input{method}
+
+\chapter{Implementation}
+\input{implementation}
+
+\chapter{Evaluation \& Discussion}
+\input{eval_and_discussion}
+
+\chapter{Conclusion}
+\input{conclusion}
+ 
+% Should use consistent formatting when it comes to Names ("FirstName LastName", or "F. LastName")
+%\printbibliography
+\makebibliography{MyBib}
+
+\begin{appendices}
+\input{appendix.tex}
+
+\checkoddpage
+\ifoddpage
+\else
+   \newpage
+   \thispagestyle{empty}
+   \mbox{ }
+\fi
+
+
+\end{appendices}
+
+\end{document}
