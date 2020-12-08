@@ -1,6 +1,6 @@
 \documentclass[nofilelist]{template/cslthse-msc}
 % to show a list of used packages at the end of the document, delete the nofilelist option
-%\documentclass{cslthse-msc} 
+%\documentclass{cslthse-msc}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{amsmath}
@@ -18,9 +18,18 @@
 \usepackage{subcaption}             % For subfigures
 \usepackage{minted}
 \usepackage{soul}
+\usepackage{tikz}                   % For drawing graphics
+\usepackage{newfloat}
 
-% ----- Define math operator argmin and vec -----
+% ----- Setup tikz ---------------
+\usetikzlibrary{positioning}
+
+
+% ----- Define math operators -----
 \DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator{\fract}{fract}
+\DeclareMathOperator{\fragpos}{frag\_pos}
+\DeclareMathOperator{\loss}{\mathcal{L}}
 %\renewcommand{\vec}[1]{\mathbf{#1}}
 
 
@@ -69,6 +78,7 @@
     tabsize=1
 }
 
+
 \lstdefinelanguage{glsl}{
     keywords = {in, out, uniform}
 }
@@ -76,7 +86,6 @@
 \lstset{language=python, style=mystyle}
 
 % ------ New command 'code' instead of stupid lstlisting -----
-
 \newcommand{\codeinline}[2][python]{\lstinline[language=#1]{#2}}
 
 
@@ -86,8 +95,17 @@
 \newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}%
 \hspace{-2.5pt}}
 
+% ------- Define \dipter command ---------
+\newcommand{\dipter}{DiPTeR}
 
-
+% ------- Define code environment --------
+\DeclareFloatingEnvironment[
+    %fileext=los,
+    %listname={List of Schemes},
+    name=Code,
+    placement=tbhp,
+    within=section,
+]{codefig}
 
 % used to display the used files at the end. Select nofilelist as a package option to disable this
 \listfiles % initialize
@@ -97,7 +115,7 @@
 \student{Sebastian Hegardt}{dat15she@student.lu.se}
 %\students{Flavius Gruian}{Flavius.Gruian@cs.lth.se}{Camilla Lekebjer}{Camilla.Lekebjer@cs.lth.se}
 
-\thesisnumber{LU-CS-EX: 2019-XX} % Birger Swahn will provide this number to you, once the thesis is ready for publication
+\thesisnumber{LU-CS-EX: 2020-61} % Birger Swahn will provide this number to you, once the thesis is ready for publication
 % default is Master. Uncomment the following for "kandidatarbete"/Bachelor's thesis
 %\thesistype{Bachelor}{Kandidatarbete}
 
@@ -119,21 +137,18 @@
 %\date{January 16, 2015}
 
 \acknowledgements{
-If you want to thank people, do it here, on a separate right-hand page. Both the U.S. \textit{acknowledgments} and the British \textit{acknowledgements} spellings are acceptable.
+First of all, I would like to extend my sincere thanks to professor Takeo Igarashi at the University of Tokyo, who accepted the role of supervisor for me and my project. I would also like to thank Seung-Tak Noh for his good advice during the inception of this project in Japan. 
 
-Thank peeps here bro!
+I'm very grateful to have had my Swedish supervisor Elin Anna Topp, who has been my support through this entire journey, and who graciously accepted the role of sole supervisor when my collaboration with Japan ended prematurely due to COVID-19. Without you, I would still be working on my project plan. Furthermore, I thank Michael Doggett for accepting the role as my examiner.
+
+Special thanks goes to Ana-Lice Machado and my dear mother Maria Marforio, for devoting their valuable time to proofread my report and finally to Hampus Åström for tips and tricks on how to improve my results.
 }
 
 \theabstract{
-This document describes the Master's Thesis format for the theses carried out at 
-the Department of Computer Science, Lund University. 
-
-Your abstract should capture, in English, the whole thesis with focus on the problem and solution in 150 words. It should be placed on a separate right-hand page, with an additional \textit{1cm} margin on both left and right. Avoid acronyms, footnotes, and references in the abstract if possible.
-
-Leave a \textit{2cm} vertical space after the abstract and provide a few keywords relevant for your report. Use five to six words, of which at most two should be from the title.
+Procedural texturing in offline rendering is steadily gaining popularity as a more compact, flexible and resolution independent alternative to conventional bitmap texturing and is supported by many major 3D software suites such as Blender and 3ds Max. However, the complexity of procedural textures can grow to unmanageable proportions, often requiring users to manually control hundreds of parameters in convoluted node graphs to achieve realistic results. In this thesis we investigate an iterative solution to automatically estimate an optimal parameter set for dynamically created procedural textures in order to minimize the difference between the rendered texture and a user’s target texture. Our approach uses the gradient descent algorithm, requiring a differentiable rendering process which necessitated the development of our own specialized differentiable procedural texture renderer. Results show that our approach can perform well for our test target textures, yielding visually similar procedurally rendered textures, but the outcome relies heavily on the choice and tuning of the loss function.
 }
 
-\keywords{MSc, BSc, template, report, style, structure}
+\keywords{Inverse graphics, differentiable rendering, procedural texturing, parameter estimation}
 
 %% Only used to display font sizes
 \makeatletter
@@ -148,7 +163,7 @@ Leave a \textit{2cm} vertical space after the abstract and provide a few keyword
 \chapter{Introduction}
 \input{introduction}
 
-\chapter{Background \& Related Work}
+\chapter{Background}
 \input{background}
 
 \chapter{Method}

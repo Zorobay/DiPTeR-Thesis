@@ -38,14 +38,18 @@
 \usepackage{xparse,longtable,array}
 %\usepackage{xparse,l3regex,longtable,array}
 \usepackage{expl3}
+
 \expandafter\def\csname ver@l3regex.sty\endcsname{} 
 
 
    \ifxetex
 		\usepackage[no-math]{fontspec}
-%	 	\setmainfont{TeX Gyre Termes}
-		\setmainfont{Adobe Garamond Pro} 
-	   	\setsansfont{Frutiger LT Std} %\setsansfont{TeX Gyre Adventor} %	   	\setsansfont{TeX Gyre Heros}
+		\usepackage{ebgaramond}
+	 	\setmainfont{TeX Gyre Termes}
+		%\setmainfont{Adobe Garamond Pro} 
+%	   	\setsansfont{Frutiger LT Std} 
+       \setsansfont{TeX Gyre Adventor}
+%	   	\setsansfont{TeX Gyre Heros}
     	\setmonofont{TeX Gyre Cursor}
 	\else
 		\ClassWarning{cslthse-msc}{Use XeTeX for better fonts!}		
@@ -60,7 +64,8 @@
 		\usepackage{qtxmath}	
 %        \usepackage{tgschola}%\usepackage{tgadventor}%\usepackage{tgheros}
 %        \global\let\bfseries\sbweight
-        \usepackage{CormorantGaramond}%\usepackage{tgtermes}
+        \usepackage{CormorantGaramond}
+        %\usepackage{tgtermes}
 %        %for CormorantGaramond
         \let\oldnormalfont\normalfont
         \def\normalfont{\oldnormalfont\mdseries}
