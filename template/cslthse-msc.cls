@@ -45,8 +45,8 @@
    \ifxetex
 		\usepackage[no-math]{fontspec}
 		\usepackage{ebgaramond}
-	 	\setmainfont{TeX Gyre Termes}
-		%\setmainfont{Adobe Garamond Pro} 
+	 	%\setmainfont{TeX Gyre Termes}
+		\setmainfont{Adobe Garamond Pro} 
 %	   	\setsansfont{Frutiger LT Std} 
        \setsansfont{TeX Gyre Adventor}
 %	   	\setsansfont{TeX Gyre Heros}
@@ -61,7 +61,8 @@
 %		\usepackage{tgcursor}
 %%% change
 		\usepackage{lmodern}%\usepackage{tgcursor}
-		\usepackage{qtxmath}	
+		\usepackage{qtxmath}
+			
 %        \usepackage{tgschola}%\usepackage{tgadventor}%\usepackage{tgheros}
 %        \global\let\bfseries\sbweight
         \usepackage{CormorantGaramond}

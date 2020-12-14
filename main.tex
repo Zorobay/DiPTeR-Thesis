@@ -55,40 +55,6 @@
 }
 
 
-% ----- Setup listings ---------
-\lstdefinestyle{mystyle}{
-    backgroundcolor=\color{matBackground},   
-    commentstyle=\color{matComment},
-    keywordstyle=\color{matKeyword},
-    numberstyle=\tiny\color{matNumber},
-    stringstyle=\color{matString},
-    basicstyle=\linespread{1.1}\ttfamily\footnotesize\color{matText},
-    procnamekeys={def},
-    procnamestyle=\color{matFunction},
-    morekeywords={Tensor},
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=1
-}
-
-
-\lstdefinelanguage{glsl}{
-    keywords = {in, out, uniform}
-}
-\lstset{language=glsl, style=mystyle}
-\lstset{language=python, style=mystyle}
-
-% ------ New command 'code' instead of stupid lstlisting -----
-\newcommand{\codeinline}[2][python]{\lstinline[language=#1]{#2}}
-
-
 % ------- Define checkmark for checkbox list -----------
 \usepackage{pifont}
 \newcommand{\cmark}{\ding{51}}%

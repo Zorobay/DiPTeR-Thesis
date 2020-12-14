@@ -46,18 +46,18 @@ Procedural textures are rendered in OpenGL using small programs called \textit{s
 
 \subsection{Composing Shaders}\label{sec:MethodComposingShaders}
 
-Much of the power of procedural textures comes from the fact that they are just functions, and as such can be composed and reused as explained in section \ref{sec:BackgroundProceduralTextures}. Unfortunately however, neither OpenGL nor GLSL have any support for shader composition or even code reuse. The latter can fairly easily be supported by implementing a custom preprocessor directive that simply prepends needed source code to a GLSL shader source file before compilation, see section \ref{sec:ImportPreprocessorDirective} on its implementation. Supporting dynamic function composition from Python at run-time however is more complex as GLSL is a compiled language, forcing us to recompile the shader source code each time a change to the node graph's structure is introduced. Furthermore, due to OpenGL restricting us to a single source file for our fragment shader, code from different files need to be assembled into a single file at run-time before compilation. To achieve this, we have built a custom parsing engine that reads and parses GLSL source files once, breaking down files, functions and arguments into Python objects. This code is dynamically reassembled and recompiled according to the structure of the node graph that a user has designed. OpenGL shaders accept input during runtime using so called \textit{uniforms} which have to be uniquely named. This can be tricky when a large node graph is interpreted, as each unconnected node input will be turned into a uniform in the resulting single file source code. If all nodes are of different types this does not pose much of a problem, but as nodes of the same type use the same code (and thus the same underlying argument names), an additional system to ensure unique uniform names is required. Therefore, each node of the same type is assigned a number unique within that type, which the uniform name is based on, see section \ref{sec:ImplementationProceduralShadingGLSL} for details.
+Much of the power of procedural textures comes from the fact that they are just functions, and as such can be composed and reused as explained in section \ref{sec:BackgroundProceduralTextures}. Unfortunately however, neither OpenGL nor GLSL have any support for shader composition or even code reuse. The latter can fairly easily be supported by implementing a custom preprocessor directive that simply prepends needed source code to a GLSL shader source file before compilation, see section \ref{sec:ImportPreprocessorDirective} on its implementation. Supporting dynamic function composition from Python at run-time however is more complex as GLSL is a compiled language, forcing us to recompile the shader source code each time a change to the node graph's structure is introduced. Furthermore, due to OpenGL restricting us to a single source file for our fragment shader, code from different files need to be assembled into a single file at run-time before compilation. To achieve this, we have built a custom parsing engine that reads and parses GLSL source files once, breaking down files, functions and arguments into Python objects. This code is dynamically reassembled and recompiled according to the structure of the node graph that a user has designed. OpenGL shaders accept input during runtime using so called \textit{uniforms} which have to be uniquely named. This can be tricky when a large node graph is interpreted, as each unconnected node input will be turned into a uniform in the resulting single file source code. If all nodes are of different types this does not pose much of a problem, but as nodes of the same type use the same code (and thus the same underlying argument names), an additional system to ensure unique uniform names is required. Therefore, each node of the same type is assigned a number that is unique within that type, which the uniform name is based on, see section \ref{sec:ImplementationProceduralShadingGLSL} for details.
 
 
 \section{Differentiable Rendering}\label{sec:RenderingInDiPTeR}
 
-While designing shaders in OpenGL is fairly easy using GLSL, reusing code and composing shaders dynamically poses a real challenge. For our differentiable shading, the problem is essentially reversed as setting up a rendering system that can reliably mimic the OpenGL renderer is difficult, while composing shaders is trivial and requires no parsing, as dynamically composing functions is innately supported by the Python programming language.
+While designing shaders in OpenGL is fairly easy using GLSL, reusing code and composing shaders dynamically poses a real challenge. For our differentiable shading the problem is essentially reversed, as setting up a rendering system that can reliably mimic the OpenGL renderer is difficult, while composing shaders is trivial and requires no parsing, as dynamically composing functions is innately supported by the Python programming language.
 
-While OpenGL is a fully fledged computer graphics framework, our Python rendering engine is implemented as a simplified and highly specialized differentiable 2D procedural texture rendering engine. No 3D support is needed, as it is only used for parameter estimation by way of 2D texture similarity optimization. Furthermore, it assumes uniform directional lighting, meaning lighting is not calculated as we want to focus on reproducing underlying texture patterns and colors, and parameters governing lighting is not necessarily part of the procedural texture function. By default, OpenGL includes a fourth color channel for opacity which we ignore as it is too ambiguous to be used in inverse rendering and thus handle all images as having three channels.
+While OpenGL is a fully fledged computer graphics framework, our Python rendering engine is implemented as a simplified and highly specialized differentiable 2D procedural texture rendering engine. No 3D support is needed, as it is only used for parameter estimation by way of 2D texture similarity optimization. Furthermore, it assumes uniform directional lighting, meaning lighting is essentially not calculated, as we want to focus on reproducing underlying texture patterns and colors and parameters governing lighting is not necessarily part of the procedural texture function. By default, OpenGL includes a fourth color channel for opacity which we ignore as it is too ambiguous to be used in inverse rendering and thus we handle all images as having three channels.
 
-To be able to differentiate the rendering procedure reliably and dynamically, we need to utilize automatic differentiation. Therefore, we implemented our differentiable renderer using Facebook's machine learning framework \textit{PyTorch} with a built in automatic differentiation engine \cite{paszke_2019_pytorch}. A few other candidates were considered early on, like Google's automatic differentiator \textit{Jax} \cite{bradbury_2018_jax}. This framework has the advantage that it can automatically differentiate code that is almost identical to normal Python or Numpy syntax, whereas most other frameworks require the user to implement code with a specific syntax, a sort of mini-language. Additionally, TensorFlow was temporarily evaluated, but both frameworks were found to be slightly slower and not as robust as PyTorch.
+To be able to differentiate the rendering procedure reliably and dynamically, we need to utilize automatic differentiation. Therefore, we implemented our differentiable renderer using Facebook's machine learning framework \textit{PyTorch} that features a built in automatic differentiation engine \cite{paszke_2019_pytorch}. A few other candidates were considered early on, like Google's automatic differentiator \textit{Jax} \cite{bradbury_2018_jax}. This framework has the advantage that it can automatically differentiate code that is almost identical to normal Python or Numpy syntax, whereas most other frameworks require the user to implement code with a specific syntax, a sort of mini-language. Additionally, TensorFlow was temporarily evaluated, but both frameworks were found to be slightly slower and not as robust as PyTorch.
 
-As explained, an important requirement when designing PyTorch shaders is that for a specific parameter set $\Vec{\theta}$ and procedural texture model, both OpenGL and our PyTorch renderer should produce the same 2D texture matrix. Therefore, the simplest way to perform shading would be to iteratively call a shader function, or composition of shader functions, on each pixel of the 2D plane being rendered, mimicking the OpenGL shader in section \ref{sec:MethodOpenGLShader}. This approach in PyTorch is explained in section \ref{sec:MethodIterativeRendering}, but proves very inefficient, why a second much more efficient but unfortunately less readable solution was devised, dubbed \textit{matrix shading}. However, seeing as the rendering times were cut by upward a thousand times, some decrease in readability was deemed a justifiable sacrifice. 
+As explained, an important requirement when designing PyTorch shaders is that for a specific parameter set and procedural texture model, both OpenGL and our PyTorch renderer should produce the same 2D texture matrix. Therefore, the simplest way to perform shading would be to iteratively call a shader function, or composition of shader functions, on each pixel of the 2D plane being rendered, mimicking the OpenGL shader in section \ref{sec:MethodOpenGLShader}. This approach in PyTorch is explained in section \ref{sec:MethodIterativeRendering}, but proves very inefficient, why a second much more efficient but unfortunately less readable solution was devised, dubbed \textit{matrix shading}. However, seeing as the rendering times were cut by upward a thousand times, some decrease in readability was deemed a justifiable sacrifice. 
 
 
 \subsection{PyTorch Shader}
@@ -66,7 +66,7 @@ Each OpenGL shader has an associated Python class in \dipter{} which keeps a ref
 
 \subsubsection{Generating Fragment Coordinates}
 
-By default convention, the pixel positions in OpenGL are located at \textit{half-pixel coordinates}, meaning that the actual coordinate for a pixel is the position of the center of that pixel \cite{segal_2013_the}. In Python, this means that the index of an element in the rendered image matrix does not directly correlate with the fragment coordinate. This does not matter much if the resolution is high, as the maximum error of the fragment position we can get if we incorrectly assume that the coordinates are given by the lower left corner of a pixel, is half a pixel, or $\frac{1}{2r}$, where $r$ is the pixel resolution in some direction. Let $w$ and $h$ be the image width and height in pixels and $(x,y)$ the index of a pixel element in the matrix, where $0 \leq x \leq w-1$ and $0\leq y \leq h-1$. In general, a pixel's (or fragment's) position at index $(x,y)$ is given by equation \ref{eq:UnnormalizedFragPos}. Note that this is the coordinate in three dimensions.
+By default convention, the pixel positions in OpenGL are located at \textit{half-pixel coordinates}, meaning that the actual coordinate for a pixel is the position of the center of that pixel \cite{segal_2013_the}. In Python, this means that the index of an element in the rendered image matrix does not directly correlate with the fragment coordinate. This does not matter much if the resolution is high, as the maximum error of the fragment position we can get if we incorrectly assume that the coordinates are given by the lower left corner of a pixel is half a pixel, a fraction $\frac{1}{2r}$ of the image, where $r$ is the pixel resolution in some direction. Let $w$ and $h$ be the image width and height in pixels and $(x,y)$ the index of a pixel element in the matrix, where $0 \leq x \leq w-1$ and $0\leq y \leq h-1$. In general, a pixel's (or fragment's) position at index $(x,y)$ is given by equation \ref{eq:UnnormalizedFragPos}. Note that this is the coordinate in three dimensions.
 
 \begin{equation}\label{eq:UnnormalizedFragPos}
 p(x,y) = \begin{bmatrix}x + \frac{1}{2w}, & y + \frac{1}{2h}, & 0\end{bmatrix}
@@ -81,66 +81,65 @@ In our system however, we are only interested in the normalized fragment coordin
 
 \subsubsection{Iterative Shading}\label{sec:MethodIterativeRendering}
 
-Iterative shading attempts to model the way shaders operate in OpenGL, where a fragment shader is called for each fragment (effectively pixel) independently and returns a color for that one fragment. To render an image, we first need to define its width and height in pixels and create an empty matrix of shape $(width, height, 3)$ to act as our image placeholder. Then, each position in the matrix is assigned to the output of the render function, where the normalized pixel coordinate \texttt{frag\_pos} is relative to the position in the matrix while the other arguments are kept constant. This algorithm is explained in pseudocode in Algorithm \ref{alg:IterativeRendering}. 
+Iterative shading attempts to model the way shaders operate in OpenGL, where a fragment shader is called for each fragment (effectively pixel) independently and returns a color for that one fragment. To render an image, we first need to define its width and height in pixels and create an empty matrix of shape $(width, height, 3)$ as our image placeholder. Then, each position in the matrix is assigned to the output of the render function, where the normalized pixel coordinate \texttt{frag\_pos} is relative to the position in the matrix while the other arguments are kept constant. This algorithm is explained in pseudocode in Algorithm \ref{alg:IterativeRendering}. 
 
-\begin{algorithm}[H]
-\SetKwData{Img}{img}\SetKwData{Width}{width}\SetKwData{Height}{height}\SetKwData{Xs}{xs}\SetKwData{Ys}{ys}\SetKwData{X}{x}\SetKwData{Y}{y}\SetKwData{FragPos}{frag\_pos}\SetKwData{Params}{params}
-\SetKwFunction{Shade}{Shade}\SetKwFunction{GenerateFragPos}{GenerateFragPos}
-\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+While this implementation is straight forward and easily translated from GLSL, the two nested Python for loops become a major performance bottleneck. All PyTorch functions are implemented and highly optimized in a C++ back end while Python for loops are notoriously slow. Furthermore, some shaders do not use the \texttt{frag\_pos} variable, and will thus have the same output for each pixel. Calling the shader function $width \times height$ times, when we could call it once and replicate the output over the entire image, is a huge waste of time. Another, even worse implication is the fact that PyTorch will add a node to the computational graph for each call to a PyTorch function. As such, this approach will add $width \times height$ duplicate operation nodes to the graph, making it much slower to traverse in the backward step as well as memory inefficient. Using only built in PyTorch functions as far as possible can give a thousandfold performance boost, especially when rendering higher resolution images. How this is achieved is explained in the next section.
 
-\Input{A shade function \Shade, a set of parameters \Params and an image size tuple (\Width, \Height).}
-\Output{A matrix of size $\Width \times \Height \times 3$ containing the pixel data for the rendered image.}
-
-\BlankLine
-Initialize \Img as empty matrix of size (\Width, \Height, 3)\;
-
-\For {\X $=0$ \KwTo \Width}{
-    \For{\Y $=0$ \KwTo \Height}{
-        \FragPos $\leftarrow$ \GenerateFragPos{x,y}\;
-        \Img[\X, \Y] $\leftarrow$ \Shade{\FragPos, \Params} \;
-    }
-}
-\Return \Img\;
-\caption{Iterative rendering algorithm}
-\label{alg:IterativeRendering}
+\begin{algorithm}
+	\SetKwData{Img}{img}\SetKwData{Width}{width}\SetKwData{Height}{height}\SetKwData{Xs}{xs}\SetKwData{Ys}{ys}\SetKwData{X}{x}\SetKwData{Y}{y}\SetKwData{FragPos}{frag\_pos}\SetKwData{Params}{params}
+	\SetKwFunction{Shade}{Shade}\SetKwFunction{GenerateFragPos}{GenerateFragPos}
+	\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+	
+	\Input{A shade function \Shade, a set of parameters \Params and an image size tuple (\Width, \Height).}
+	\Output{A matrix of size $\Width \times \Height \times 3$ containing the pixel data for the rendered image.}
+	
+	\BlankLine
+	Initialize \Img as empty matrix of size (\Width, \Height, 3)\;
+	
+	\For {\X $=0$ \KwTo \Width}{
+		\For{\Y $=0$ \KwTo \Height}{
+			\FragPos $\leftarrow$ \GenerateFragPos{x,y}\;
+			\Img[\X, \Y] $\leftarrow$ \Shade{\FragPos, \Params} \;
+		}
+	}
+	\Return \Img\;
+	\caption{Iterative rendering algorithm}
+	\label{alg:IterativeRendering}
 \end{algorithm}
-
-While this implementation is straight forward and easily translated from GLSL, the two nested Python for loops become a major performance bottleneck. All PyTorch functions are implemented and highly optimized in a C++ back end while Python for loops are notoriously slow. Furthermore, some shaders do not use the \texttt{frag\_pos} variable, and will thus have the same output for each pixel. Calling the shader function $width \times height$ times, when we could call it once and replicate the output over the entire image, is a huge waste of time. Another, even worse implication is the fact that PyTorch will add a node to the computational graph for each call to a PyTorch function. As such, this approach will add $width \times height$ duplicate operation nodes to the graph, making it much slower to traverse in the backward step as well as memory inefficient. Using only built in functions as far as possible can give a thousandfold performance boost, especially when rendering higher resolution images. How this is achieved is explained in the next section.
 
 \subsubsection{Matrix Shading}\label{sec:MethodMatrixImplementation}
 
-One major disadvantage to PyTorch is that it does not have a \texttt{map}-function that can apply a function to each position in a matrix. This would solve our problem, as we could keep our iterative method while removing the need for slow Python loops. Instead, we can generate input and output parameters for every pixel simultaneously in a matrix the same size as the final rendered image. PyTorch uses its own data structure called a \texttt{Tensor} that represents data of any shape or dimension of any primitive Python type. The functions in the PyTorch library operate on these tensors element-wise, which we can utilize to calculate parameters and color data for the entire image in one call to the shade function. Any parameter of size $d$, be it a scalar where $d=1$ or a color vector where $d=3$, can be extended to a matrix of size $(width, height, d)$ to represent that parameter over the entire image. The fragment coordinates can now be generated once in the superclass, and used by all shaders, as a matrix of size $width, height, d=3)$, where each element is a vector $[p_x,  p_y,  p_z]$. The output of a shader function is now not only the color of a single pixel but the color of all pixels, in other terms; the fully rendered image. Thanks to PyTorch's element-wise operators, the implementation does not have to change at all in some cases, and in most cases, it is only a matter of handling the extra dimensions. The performance gains are particularly significant for shaders that do not utilize the fragment coordinates, and therefore have a uniform color output across the image. In these shaders, the color only have to be calculated once, and then repeated using PyTorch's \texttt{repeat} function, instead of running the shader thousands of times, once for each pixel, like in the iterative method. The other advantage of this method is that the resulting computational graph is much smaller, as each operation only has to be added once.
+One major disadvantage to PyTorch is that it does not have a \texttt{map}-function that can apply a function to each position in a matrix. This would solve our problem, as we could keep our iterative method while removing the need for slow Python loops. Instead, we can generate input and output parameters for every pixel simultaneously in a matrix the same size as the final rendered image. PyTorch uses its own data structure called a \texttt{Tensor} that represents data of any shape or dimension of any primitive Python type. The functions in the PyTorch library operate on these tensors element-wise, which we can utilize to calculate parameters and color data for the entire image in one call to the shade function. Any parameter of size $d$, be it a scalar where $d=1$ or a color vector where $d=3$, can be extended to a tensor of size $(width, height, d)$ to represent that parameter over the entire image. The fragment coordinates can now be generated once in the superclass and used by all shaders as a tensor of size $(width, height, d=3)$, where each element is a vector $[p_x,  p_y,  p_z]$. The output of a shader function is now not only the color of a single pixel but the color of all pixels, in other terms; the fully rendered image. Thanks to PyTorch's element-wise operators, the implementation does not have to change at all in some cases, and in most cases, it is only a matter of handling the extra dimensions. The performance gains are particularly significant for shaders that do not utilize the fragment coordinates, and therefore have a uniform color output across the image. In these shaders the color only have to be calculated once and then repeated using PyTorch's \texttt{repeat} function instead of running the shader thousands of times, once for each pixel, like in the iterative method. The other advantage of this method is that the resulting computational graph is much smaller, as each operation only has to be added once.
 
+
+For visual reference, the fragment coordinates matrix is shown in equation \ref{eq:FragPosMatrix}. Let $f(x,y)$ denote the function that generates the fragment coordinate in equation \ref{eq:FragPos}, at each image integer index $(x,y)$, and let $f_x$, $f_y$, $f_z$ denote functions that return the $x$,$y$, and $z$ coordinates returned by $f$, respectively. The equation shows the matrix $F$ that contains all the fragment positions, such that each position $i,j$ in the matrix contains the vector $f(i,j)$. 
+The matrix rendering method has an important speed advantage, but there does exist a truly limiting drawback when it comes to loops, where the loop count is dictated by an argument to the shader function. As mentioned, all arguments are matrices, and can therefore not be used as arguments to most Python control flow such as \texttt{if}-statements and \texttt{for}-loops, but some of these cases can be solved by using PyTorch alternative functions, see section \ref{sec:ImplementationPyTorchShader}.
 
 \begin{equation}\label{eq:FragPosMatrix}
-\begin{aligned}
-    F[:,:,0] &= 
-    \begin{bmatrix} 
-        f_x(0,0)    & f_x(1,0)  & \dots     & f_x(w,0)  \\
-        f_x(0,1)    & f_x(1,1)  & \dots     & f_x(w,1)  \\
-        \vdots      & \vdots    & \ddots    & \vdots    \\
-        f_x(0,h)    & f_x(1,h)  & \dots     & f_x(w,h)  
-    \end{bmatrix} \\
-    F[:,:,1] &= 
-    \begin{bmatrix} 
-        f_y(0,0)    & f_y(1,0)  & \dots     & f_y(w,0)  \\
-        f_y(0,1)    & f_y(1,1)  & \dots     & f_y(w,1)  \\
-        \vdots      & \vdots    & \ddots    & \vdots    \\
-        f_y(0,h)    & f_y(1,h)  & \dots     & f_y(w,h)  
-    \end{bmatrix} \\
-    F[:,:,2] &= 
-    \begin{bmatrix} 
-        0    & 0  & \dots     & 0  \\
-        0    & 0  & \dots     & 0  \\
-        \vdots      & \vdots    & \ddots    & \vdots    \\
-        0    & 0  & \dots     & 0  
-    \end{bmatrix}
-\end{aligned}
+	\begin{aligned}
+		F[:,:,0] &= 
+		\begin{bmatrix} 
+			f_x(0,0)    & f_x(1,0)  & \dots     & f_x(w,0)  \\
+			f_x(0,1)    & f_x(1,1)  & \dots     & f_x(w,1)  \\
+			\vdots      & \vdots    & \ddots    & \vdots    \\
+			f_x(0,h)    & f_x(1,h)  & \dots     & f_x(w,h)  
+		\end{bmatrix} \\
+		F[:,:,1] &= 
+		\begin{bmatrix} 
+			f_y(0,0)    & f_y(1,0)  & \dots     & f_y(w,0)  \\
+			f_y(0,1)    & f_y(1,1)  & \dots     & f_y(w,1)  \\
+			\vdots      & \vdots    & \ddots    & \vdots    \\
+			f_y(0,h)    & f_y(1,h)  & \dots     & f_y(w,h)  
+		\end{bmatrix} \\
+		F[:,:,2] &= 
+		\begin{bmatrix} 
+			0    & 0  & \dots     & 0  \\
+			0    & 0  & \dots     & 0  \\
+			\vdots      & \vdots    & \ddots    & \vdots    \\
+			0    & 0  & \dots     & 0  
+		\end{bmatrix}
+	\end{aligned}
 \end{equation}
-
-For visual reference, the fragment coordinates matrix is shown in equation \ref{eq:FragPosMatrix}. Let $f(x,y)$ denote the function that generates the fragment coordinate in equation \ref{eq:FragPos}, at each image integer index $(x,y)$, and let $f_x$, $f_y$, $f_z$ denote the $x$,$y$, and $z$ coordinates returned by $f$, respectively. The equation shows the matrix $F$ that contains all the fragment positions, such that each position $i,j$ in the matrix contains the vector $f(i,j)$. 
-The matrix rendering method has an important speed advantage, but there does exist a truly limiting drawback when it comes to loops, where the loop count is dictated by an argument to the shader function. As mentioned, all arguments are matrices, and can therefore not be used as arguments to most Python control flow such as \texttt{if}-statements and \texttt{for}-loops but some of these cases can be solved by using PyTorch alternative functions, see section \ref{sec:ImplementationPyTorchShader}.
-
 
 % \begin{algorithm}[H]
 % \SetKwData{D}{D}\SetKwData{Width}{width}\SetKwData{Height}{height}\SetKwData{T}{t}\SetKwData{V}{V}\SetKwData{FP}{frag\_pos}
@@ -167,65 +166,56 @@ The matrix rendering method has an important speed advantage, but there does exi
 
 As Python is our main programming language and the shaders are defined in Python, shaders are already symbolically composed via the node graph. Rendering a composed shader can therefore be easily achieved by traversing the node graph in a correct order and using the output of shaders as input to other connected shaders. Rendering with composite shaders have to be initialized from a node in the graph rather than a shader, as shaders are isolated units, in essence a single function, without any references to other shaders.
 
-The node graph is traversed in depth first order starting from the Material Output root node. Rendering is recursive, and for current node $N$, the algorithm starts by checking each input socket if it is connected and if so, the connected node is recursively rendered and the output is saved to be used as a parameter for $N$s shading function. If the socket is not connected, the parameter value is fetched from the input widget, set by the user in the graphical interface. The unconnected parameters are saved in a dictionary and constitutes the procedural texture parameters $\vec{\theta}$ we want to optimize during parameter estimation. Finally, the shade function is called using the collected parameters and the rendered matrix is returned together with the parameter dictionary for N. For every recursive render call, this dictionary is extended until all connected nodes have been rendered and the parameter dictionary is complete for the graph. This algorithm is shown in Algorithm \ref{alg:PythonCompositeRendering}. The \texttt{Shade} function being called at the end is the shade function of the shader that the current node being rendered contains. The call to \texttt{GetUniqueUniform} is not strictly needed to render an image in Python, but is needed when translating the parameter values to OpenGL in order to know which parameter value belongs to which uniform.
+The node graph is traversed in depth first order starting from the Material Output root node. Rendering is recursive, and for current node $N$, the algorithm starts by checking each input socket if it is connected and if so, the connected node is recursively rendered and the output is saved to be used as a parameter for $N$s shading function. If the socket is not connected, the parameter value is fetched from the input widget, set by the user in the graphical interface. The unconnected parameters are saved in a dictionary and constitutes the procedural texture parameters $\vec{\theta}$ we want to optimize during parameter estimation. Finally, the shade function is called using the collected parameters and the rendered matrix is returned together with the parameter dictionary for $N$. For every recursive render call, this dictionary is extended until all connected nodes have been rendered and the parameter dictionary is complete for the graph. This algorithm is shown in Algorithm \ref{alg:PythonCompositeRendering}. The \texttt{Shade} function being called at the end is the shade function of the shader that the current node being rendered contains. The call to \texttt{GetUniqueUniform} is needed when translating the parameter values to OpenGL in order to know which parameter value belongs to which uniform.
 
-
-\begin{algorithm}[H]
-\SetKwProg{Fn}{Function}{}{end}\SetKwFunction{Render}{Render}%
-\SetKwData{Width}{width}\SetKwData{Height}{height}\SetKwData{Arg}{arg}\SetKwData{ParamsDict}{params\_dict}\SetKwData{Arguments}{arguments}\SetKwData{Socket}{socket}\SetKwData{Node}{node}\SetKwData{Value}{value}\SetKwData{PD}{pd}\SetKwData{Uniform}{uniform}\SetKwData{Root}{root\_node}
-\SetKwFunction{GetInputSockets}{GetInputSockets}\SetKwFunction{GetConnectedNode}{GetConnectedNode}\SetKwFunction{GetArg}{GetArg}\SetKwFunction{GetValueFromSocket}{GetValueFromSocket}\SetKwFunction{GetUniqueUniform}{GetUniqueUniform}\SetKwFunction{Shade}{Shade}
-
-
-\Fn{\Render{\Width, \Height}}{
-Initialize \ParamsDict as empty dictionary\;
-Initialize \Arguments as empty dictionary\;
-
-\For{\Socket $\in$ \GetInputSockets{}}{
-    \Arg $\leftarrow$ \GetArg{\Socket}\;
-    \Uniform $\leftarrow$ \GetUniqueUniform{\Arg} \;
-    \eIf{\Socket is connected}{
-        \Node $\leftarrow$ \GetConnectedNode{\Socket}\;
-        \tcp{recursive rendering}       
-        \Value, \PD $\leftarrow$ \Node.\Render{\Width, \Height}\;
-        Update \ParamsDict with \PD\;
-    }{
-        \Value $\leftarrow$ \GetValueFromSocket{\Socket}\;
-        Add \Value to \Arguments with key \Arg\;
-    }
-    Add \Value to \ParamsDict with key \Uniform \;
-}
-
-\Return \Shade{\Arguments}, \ParamsDict \;
-}
-\caption{Recursive rendering algorithm for composite Python shaders.}
-\label{alg:PythonCompositeRendering}
-\end{algorithm}
-
-
-
-
-% \section{Testing Shader Implementation Similarity}
-
-% \begin{enumerate}
-%     \item We need to ensure that our implementations generate the same results.
-%     \item Explain the minimum MSE error we can expect.
-% \end{enumerate}
-
-% \textbf{Explain WHAT I did to enable shaders to be composed, not HOW I did it as that's for the implementation chapter...}
 
 
 \section{Parameter Estimation}
 
-Parameter Estimation, also referred to as \textit{Texture Matching} in \dipter{}, is our subsystem that lets users automatically estimate parameters of a procedural texture model they designed in order to minimize the difference between a target bitmap texture and the procedural texture output. This is posed as an optimization problem as described in equation \ref{eq:GradientDescentOptimization}, where the goal is to find optimal parameters $\Vec{\theta}^*$ such that they minimize a loss function $\loss(\Vec{\theta}^*)$. In our system however, we split the rendering of our procedural texture $\hat{X} = R(\vec{\theta})$ and the loss measurement $l=\loss(\hat{X},X)$ because in PyTorch, all operations performed on Tensors are tracked locally in the Tensor datastructure. This enables us to have the loss function only indirectly depend on the procedural parameters and instead be a function of two parameters, a Python rendered image and a user supplied target image. In other words, we can render the image in one function and calculate the loss in another function, but all operations performed on the parameters in either function will be registered in the Tensors. This is crucial, as it enables us to find the derivative $\frac{\partial \theta_i}{\partial l}$ of any parameter $\theta_i$ in $\vec{\theta}$ with respect to the final loss $l = \loss(\hat{X}, X)$, even though the loss function does not directly depend on parameter $\theta_i$. Parameter estimation is controlled through our texture matching GUI, see section \ref{sec:TextureMatcherInterface}.
+Parameter Estimation, also referred to as \textit{Texture Matching} in \dipter{}, is our subsystem that lets users automatically estimate parameters of a procedural texture model they designed in order to minimize the difference between a target bitmap texture and the procedural texture output. This is posed as an optimization problem, where the goal is to find optimal parameters $\Vec{\theta}^*$ such that they minimize a loss function $\loss(\Vec{\theta}^*)$. In our system however, we split the rendering of our procedural texture $\hat{X} = R(\vec{\theta})$ and the loss measurement $l=\loss(\hat{X},X)$ because in PyTorch, all operations performed on Tensors are tracked locally in the Tensor datastructure. This enables us to have the loss function only indirectly depend on the procedural parameters and instead be a function of two parameters, a Python rendered image and a user supplied target image. In other words, we can render the image in one function and calculate the loss in another function, but all operations performed on the parameters in either function will be registered in the Tensors. This is crucial, as it enables us to find the derivative $\frac{\partial \theta_i}{\partial l}$ of any parameter $\theta_i \in \vec{\theta}$ with respect to the final loss $l = \loss(\hat{X}, X)$, even though the loss function does not directly depend on parameter $\theta_i$. Parameter estimation is controlled through our texture matching GUI, see section \ref{sec:TextureMatcherInterface}.
+
+\begin{algorithm}
+	\SetKwProg{Fn}{Function}{}{end}\SetKwFunction{Render}{Render}%
+	\SetKwData{Width}{width}\SetKwData{Height}{height}\SetKwData{Arg}{arg}\SetKwData{ParamsDict}{params\_dict}\SetKwData{Arguments}{arguments}\SetKwData{Socket}{socket}\SetKwData{Node}{node}\SetKwData{Value}{value}\SetKwData{PD}{pd}\SetKwData{Uniform}{uniform}\SetKwData{Root}{root\_node}
+	\SetKwFunction{GetInputSockets}{GetInputSockets}\SetKwFunction{GetConnectedNode}{GetConnectedNode}\SetKwFunction{GetArg}{GetArg}\SetKwFunction{GetValueFromSocket}{GetValueFromSocket}\SetKwFunction{GetUniqueUniform}{GetUniqueUniform}\SetKwFunction{Shade}{Shade}
+	
+	
+	\Fn{\Render{\Width, \Height}}{
+		Initialize \ParamsDict as empty dictionary\;
+		Initialize \Arguments as empty dictionary\;
+		
+		\For{\Socket $\in$ \GetInputSockets{}}{
+			\Arg $\leftarrow$ \GetArg{\Socket}\;
+			\Uniform $\leftarrow$ \GetUniqueUniform{\Arg} \;
+			\eIf{\Socket is connected}{
+				\Node $\leftarrow$ \GetConnectedNode{\Socket}\;
+				\tcp{recursive rendering}       
+				\Value, \PD $\leftarrow$ \Node.\Render{\Width, \Height}\;
+				Update \ParamsDict with \PD\;
+			}{
+				\Value $\leftarrow$ \GetValueFromSocket{\Socket}\;
+				Add \Value to \Arguments with key \Arg\;
+			}
+			Add \Value to \ParamsDict with key \Uniform \;
+		}
+		
+		\Return \Shade{\Arguments}, \ParamsDict \;
+	}
+	\caption{Recursive rendering algorithm for composite Python shaders.}
+	\label{alg:PythonCompositeRendering}
+\end{algorithm}
+
 
 \subsection{Loss Functions}\label{sec:MethodLossFunctions}
 
 % \textbf{X and $\hat{X}$ are both clamped before being compared because otherwise they wont correspond to what is being rendered! Both openGL and matplotlib/pyqtgraph clamp values to 0,1.}
 We make three loss functions available to users: a simple Mean Squared Error loss, Squared Bin Loss as well as a more sophisticated Neural Loss. The MSE loss function works exactly as described in section \ref{sec:LossFunctions} and is very fast and exact, as it measures similarity between individual pixels. It can perform well for very simple procedural textures where an exactly matching result is possible to obtain. In the general case however, this will not be the case, especially not when noise is used in the textures. The Squared Bin loss function is similar to an MSE loss function, but divides the image into regions or bins of $N\times N$ pixels and calculates the average color of each bin, before finally returning the mean squared error of the averages. This loss function can work well for finding general patterns in an image, but can fail within the regions. Making the regions larger makes it less sensitive to noise, but performs worse within regions, and if the regions are made too small, the loss function will exhibit the same traits as the normal MSE. 
 
-Building on findings by Guo et. al., an even better solution should be to utilize machine learning to automatically unveil the underlying patterns in the textures, and directly comparing them \cite{guo_2019_a}. This type of loss function is dubbed a Neural Loss, as the general idea is to pass the images through a neural network, where image features will be extracted by the different layers in the networks, as explained in section \ref{sec:LossFunctions}. This loss function is much more spatially independent than the other two and should focus more on the general look of the textures. For example, the other two loss functions would be fairly bad at recognizing that two different textures of the same type of wood are similar, because locally, these textures can have very different color values. A neural loss function however, could extract features pertaining to the direction of the grain or the presence of knots etc. A comparison of the performances of these loss functions is found in section \ref{sec:EvalParameterEstimationSpeed}.
+Building on findings by Guo et. al., an even better solution should be to utilize machine learning to automatically unveil the underlying patterns in the textures, and directly comparing them \cite{guo_2019_a}. This type of loss function is dubbed a Neural Loss, as the general idea is to pass the images through a neural network, where image features will be extracted by the different layers in the networks, as explained in section \ref{sec:LossFunctions}. This loss function is much more spatially independent than the other two and should focus more on the general look of the textures. For example, the other two loss functions would be fairly bad at recognizing that two different textures of the same type of wood are similar, because locally, these textures can have very different color values. A neural loss function however, could extract features pertaining to the direction of the grain or the presence of knots. A comparison of the performances of these loss functions is found in section \ref{sec:EvalParameterEstimationSpeed}.
 
 \subsection{Gradient Descent}
+
+\hl{START FROM HERE !!!}
 
 Gradient Descent is performed much like described in Algorithm \ref{alg:GradientDescent}. Each iteration, an image is rendered using parameters $\vec{\theta}$ and a loss value is calculated between the rendered image $\hat{X}$ and the target image $X$. All operations performed directly on the parameters in $\vec{\theta}$ or on variables created as a result of an operation on a parameter in $\vec{\theta}$ are registered in the computational graph. The next step is to utilize PyTorch's automatic differentiation package to traverse the computational graph backwards from the loss, calculating gradients for each of our parameters. Given the gradients, the direction of the steepest ascent of the loss function relative to each parameter's dimension is known. A small gradient $g_i$ for parameter $\theta_i$ means that only a small correction of this parameter is needed in order to reach an optimal loss value, and vice versa. Lastly, it is up to the chosen optimizer to calculate new values for each parameter based on its gradient. Before the next iteration is started the rendered Python image is updated in the graphical interface and likewise the new parameters are sent to the OpenGL shader program, rendering the updated texture. This is an important visual tool and enables users to verify that the algorithm is correctly optimizing the parameters. Additionally, the new loss value is plotted to display the progress over time. The algorithm terminates when the maximum number of iterations has been reached, or the loss value is less than a specified threshold and the new parameter values can be applied to the procedural texture, if the results are satisfying. 
 
