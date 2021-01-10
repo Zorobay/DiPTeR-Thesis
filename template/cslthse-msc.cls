@@ -332,7 +332,7 @@
 \RequirePackage{titlesec}
 \makeatletter
 	\titleformat{\chapter}[display]{\normalfont\huge\bfseries}
-	{\chaptertitlename\ \thechapter}{10pt}{\Huge}[\vspace{2cm}\hrulefill]
+	{\chaptertitlename\ \thechapter}{10pt}{\Huge}[\vspace{1.5cm}\hrulefill]
 	%\titleformat{\section}[hang]{\LARGE\bfseries\sffamily}{\thesection}{}
 	\titleformat*{\section}{\LARGE\bfseries\sffamily}
 	\titleformat*{\subsection}{\Large\bfseries\sffamily}

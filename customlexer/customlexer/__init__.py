@@ -1,4 +1,5 @@
 from pygments.lexers.python import Python3Lexer
+from pygments.
 from pygments.style import Style
 from pygments.token import *
 
@@ -16,4 +17,8 @@ class CustomLexer(Python3Lexer):
                 yield index, Name.Function, value
             else:
                 yield index, token, value
+
+class GLSLLexer(GLSLLexer):
+
+
 
